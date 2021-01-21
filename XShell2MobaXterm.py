@@ -3,7 +3,7 @@
 # @Author: Seaky
 # @Date:   2021/1/19 9:51
 
-from configparser import ConfigParser
+from configparser import RawConfigParser
 from pathlib import Path
 from copy import deepcopy
 import sys
@@ -11,24 +11,25 @@ import sys
 import os
 
 PATTERN1 = '{name}=#{icon}#{protocol}%{host}%{port}%{user}'
-PATTERN2 = '#MobaFont%10%0%0%0%15%236,236,236%30,30,30%180,180,192%0%-1%0%%xterm%-1%-1%_Std_Colors_0_%80%24%0%1%-1%<none>%%0#0# #-1'
+PATTERN2 = '#MobaFont%10%0%0%0%15%236,236,236%30,30,30%180,180,192%0%-1%0%%xterm%-1%-1%_Std_Colors_0_%80%24%0%1%-1%<none>%%0#0#{description} #-1'
 
 CLASS = {
     'SSH': {
         'data':
-            {'name': '', 'icon': 109, 'protocol': 0, 'host': '', 'port': 22, 'user': '', 'keyfile': ''},
+            {'name': '', 'icon': 109, 'protocol': 0, 'host': '', 'port': 22, 'user': '', 'keyfile': '',
+             'description': ''},
         'pattern':
             PATTERN1 + '%%-1%-1%%%22%%0%0%0%{keyfile}%%-1%0%0%0%%1080%%0%0%1' + PATTERN2
     },
     'TELNET': {
         'data':
-            {'name': '', 'icon': 98, 'protocol': 1, 'host': '', 'port': 23, 'user': ''},
+            {'name': '', 'icon': 98, 'protocol': 1, 'host': '', 'port': 23, 'user': '', 'description': ''},
         'pattern':
             PATTERN1 + '%%2%%22%%%0%0%%1080%' + PATTERN2
     },
     'FTP': {
         'data':
-            {'name': '', 'icon': 130, 'protocol': 6, 'host': '', 'port': 21, 'user': ''},
+            {'name': '', 'icon': 130, 'protocol': 6, 'host': '', 'port': 21, 'user': '', 'description': ''},
         'pattern':
             PATTERN1 + '%-1%%0%0%0%0%%21%%%0%0%-1%0%0%0%' + PATTERN2
     },
@@ -47,7 +48,8 @@ def convert(source_dir, output):
             if not file_name.endswith('.xsh'):
                 continue
             file_path = dir_path / file_name
-            config = ConfigParser()
+            # ConfigParser() 不能解析含 % 的字串
+            config = RawConfigParser()
             config.read_file(open(file_path, encoding='utf-16'))
             protocol = config.get("CONNECTION", "Protocol")
             if protocol in ['SSH', 'FTP', 'TELNET']:
@@ -56,7 +58,8 @@ def convert(source_dir, output):
                     'name': file_path.stem,
                     'host': config.get("CONNECTION", "Host"),
                     'port': config.get("CONNECTION", "Port"),
-                    'user': config.get("CONNECTION:AUTHENTICATION", "UserName")
+                    'user': config.get("CONNECTION:AUTHENTICATION", "UserName"),
+                    'description': config.get("CONNECTION", "Description"),
                 })
                 open(output, 'a').write(CLASS[protocol]['pattern'].format(**d) + '\n')
             else:
